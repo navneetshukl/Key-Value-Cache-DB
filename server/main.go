@@ -4,15 +4,21 @@ package main
 import (
 	"fmt"
 	"io"
+	"key-value-db/storage"
+	"log"
 	"net"
 	"os"
+	"strings"
 )
 
 type TCPserver struct {
+	KV storage.KeyValueDB
 }
 
-func NewTCPServer() *TCPserver {
-	return &TCPserver{}
+func NewTCPServer(kv storage.KeyValueDB) *TCPserver {
+	return &TCPserver{
+		KV: kv,
+	}
 }
 
 func (s *TCPserver) handleConnection(conn net.Conn) {
@@ -28,9 +34,41 @@ func (s *TCPserver) handleConnection(conn net.Conn) {
 			}
 			return
 		}
-		fmt.Printf("Received message: %s\n", string(buffer[:n]))
 
-		_, err = conn.Write([]byte("Message received"))
+		command := strings.TrimSpace(string(buffer[:n]))
+		parts := strings.Fields(command)
+		if len(parts) == 0 {
+			continue
+		}
+		var response string
+		switch parts[0] {
+		case "SET":
+			if len(parts) != 3 {
+				response = "Usage: SET key value\n"
+			} else {
+				s.KV.Set(parts[1], parts[2])
+				response = "OK\n"
+			}
+		case "GET":
+			if len(parts) != 2 {
+				response = "Usage: GET key\n"
+			} else {
+				value, err := s.KV.Get(parts[1])
+				if err != nil {
+					log.Println("Error in getting the key ", err)
+
+					response = "(nil)\n"
+				} else {
+					response = value + "\n"
+				}
+			}
+
+		default:
+			response = "Unknown command\n"
+		}
+		// fmt.Printf("Received message: %s\n", string(buffer[:n]))
+
+		_, err = conn.Write([]byte(response))
 		if err != nil {
 			fmt.Println("Error writing to client:", err)
 			return
@@ -41,7 +79,6 @@ func (s *TCPserver) handleConnection(conn net.Conn) {
 func main() {
 	// Listen on port 8080
 
-	s := NewTCPServer()
 	ln, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		fmt.Println("Error starting server:", err)
@@ -57,6 +94,9 @@ func main() {
 			fmt.Println("Error accepting connection:", err)
 			continue
 		}
+		storage := storage.NewKV()
+
+		s := NewTCPServer(storage)
 		go s.handleConnection(conn)
 	}
 }

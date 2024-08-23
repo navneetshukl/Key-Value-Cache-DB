@@ -6,14 +6,12 @@ import (
 )
 
 type KV struct {
-	Key   string
-	Value string
 	Store map[string]string
-	mutex *sync.Mutex
+	mutex sync.Mutex
 }
 
 func NewKV() *KV {
-	return &KV{Store: make(map[string]string), mutex: &sync.Mutex{}}
+	return &KV{Store: make(map[string]string)}
 }
 
 type KeyValueDB interface {
