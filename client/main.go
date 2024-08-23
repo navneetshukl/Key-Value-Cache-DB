@@ -1,11 +1,12 @@
 // client.go
-package main
+package client
 
 import (
 	"bufio"
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -59,7 +60,7 @@ func (c *TCPclient) handleClient(conn net.Conn) {
 // 	}
 // }
 
-func main() {
+func Client(w http.ResponseWriter, r *http.Request) {
 	// Connect to server on port 8080
 	c := NewTCPClient()
 	conn, err := net.Dial("tcp", "localhost:8080")

@@ -97,6 +97,7 @@ func main() {
 		storage := storage.NewKV()
 
 		s := NewTCPServer(storage)
+		log.Println("Address is ", s)
 		go s.handleConnection(conn)
 	}
 }
