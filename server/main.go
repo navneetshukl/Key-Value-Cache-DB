@@ -27,6 +27,8 @@ func (s *TCPserver) handleConnection(conn net.Conn) {
 
 	buffer := make([]byte, 1024)
 	for {
+
+		go s.KV.CheckTTL()
 		n, err := conn.Read(buffer)
 		if err != nil {
 			if err != io.EOF {
@@ -73,6 +75,7 @@ func (s *TCPserver) handleConnection(conn net.Conn) {
 			fmt.Println("Error writing to client:", err)
 			return
 		}
+
 	}
 }
 
