@@ -19,4 +19,5 @@ type KeyValueDB interface {
 	Set(key, value string)
 	Get(key string) (string, error)
 	CheckTTL()
+	GetAllData() map[string]Value
 }

@@ -3,7 +3,7 @@ package main
 
 import (
 	"fmt"
-	"io"
+	"key-value-db/persist"
 	"key-value-db/storage"
 	"log"
 	"net"
@@ -12,12 +12,14 @@ import (
 )
 
 type TCPserver struct {
-	KV storage.KeyValueDB
+	KV      storage.KeyValueDB
+	Persist persist.PersistService
 }
 
-func NewTCPServer(kv storage.KeyValueDB) *TCPserver {
+func NewTCPServer(kv storage.KeyValueDB, ps persist.PersistService) *TCPserver {
 	return &TCPserver{
-		KV: kv,
+		KV:      kv,
+		Persist: ps,
 	}
 }
 
@@ -28,11 +30,22 @@ func (s *TCPserver) handleConnection(conn net.Conn) {
 	buffer := make([]byte, 1024)
 	for {
 
-		go s.KV.CheckTTL()
+		//go s.KV.CheckTTL()
 		n, err := conn.Read(buffer)
 		if err != nil {
-			if err != io.EOF {
+			if err.Error() != "EOF" {
 				fmt.Println("Error reading from client:", err)
+			} else {
+				log.Println("Client disconnected:", conn.RemoteAddr())
+				allData := s.KV.GetAllData()
+
+				log.Println("AllData is ", allData)
+				err := s.Persist.SaveAtServer(conn.RemoteAddr().String(), allData)
+				if err != nil {
+					log.Println("Error saving at server:", err)
+					return
+				}
+
 			}
 			return
 		}
@@ -99,7 +112,9 @@ func main() {
 		}
 		storage := storage.NewKV()
 
-		s := NewTCPServer(storage)
+		persist := persist.NewPersist()
+
+		s := NewTCPServer(storage, persist)
 		go s.handleConnection(conn)
 	}
 }

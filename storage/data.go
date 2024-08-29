@@ -42,3 +42,8 @@ func (k *KV) CheckTTL() {
 		time.Sleep(100 * time.Millisecond)
 	}
 }
+
+
+func(k *KV)GetAllData() map[string]Value{
+	return k.GetAllData()
+}
